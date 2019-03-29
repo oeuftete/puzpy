@@ -104,6 +104,30 @@ class PuzzleTests(unittest.TestCase):
             self.assertEqual(p.clues, p2.clues)
             self.assertEqual(p.fill, p2.fill)
 
+    def test_downs_only_puzzle(self):
+        '''All across entries become "-" when converted to downs-only.'''
+        p = puz.read('testfiles/washpost.puz')
+        empty_clue = lambda c: c['clue'] == '-'
+
+        self.assertEqual(
+            len(list(filter(empty_clue, p.clue_numbering().across))),
+            0
+        )
+        self.assertEqual(
+            len(list(filter(empty_clue, p.clue_numbering().down))),
+            0
+        )
+
+        p.convert_to_downs_only()
+        self.assertEqual(
+            len(list(filter(empty_clue, p.clue_numbering().across))),
+            len(p.clue_numbering().across)
+        )
+        self.assertEqual(
+            len(list(filter(empty_clue, p.clue_numbering().down))),
+            0
+        )
+
 
 class LockTests(unittest.TestCase):
 

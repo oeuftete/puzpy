@@ -226,6 +226,13 @@ class Puzzle:
         with open(filename, 'wb') as f:
             f.write(puzzle_bytes)
 
+    def convert_to_downs_only(self):
+        for i in map(lambda c: c['clue_index'], self.clue_numbering().across):
+            self.clues[i] = '-'
+
+        #  clear any previous cached numbering
+        self.helpers.pop('clues', None)
+
     def tobytes(self):
         s = PuzzleBuffer()
         # commit any changes from helpers
@@ -481,6 +488,7 @@ class DefaultClueNumbering:
                     a.append({
                         'num': n,
                         'clue': clues[c],
+                        'clue_index': c,
                         'cell': i,
                         'len': self.len_across(i)
                     })
@@ -490,6 +498,7 @@ class DefaultClueNumbering:
                     d.append({
                         'num': n,
                         'clue': clues[c],
+                        'clue_index': c,
                         'cell': i,
                         'len': self.len_down(i)
                     })
