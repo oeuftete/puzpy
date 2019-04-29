@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+
+from argparse import ArgumentParser
+import os
+import re
+
+import puz
+
+parser = ArgumentParser()
+parser.add_argument('puz_file', help='A puz file to convert to downs only')
+args = parser.parse_args()
+
+puz_file = args.puz_file
+
+try:
+    p = puz.read(puz_file)
+except puz.PuzzleFormatError:
+    print('File {} could not be read as a .puz file'.format(puz_file))
+    exit(1)
+
+p.convert_to_downs_only()
+
+(puz_name, _) = os.path.splitext(puz_file)
+do_puz_file = '{}-do.puz'.format(puz_name)
+
+p.save('{}-do.puz'.format(puz_name))
+
+print('{} -> {}'.format(puz_file, do_puz_file))
