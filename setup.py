@@ -12,6 +12,7 @@ setup(
     url='https://github.com/alexdej/puzpy',
     download_url='https://pypi.python.org/pypi/puzpy',
     py_modules=['puz'],
+    scripts=['bin/puz-to-downs-only'],
     install_requires=[],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
