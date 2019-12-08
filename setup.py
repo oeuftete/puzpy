@@ -12,8 +12,8 @@ setup(
     url='https://github.com/alexdej/puzpy',
     download_url='https://pypi.python.org/pypi/puzpy',
     py_modules=['puz'],
-    scripts=['bin/puz-to-downs-only'],
-    install_requires=[],
+    scripts=['bin/puz-to-downs-only', 'bin/uclick-xml-to-puz'],
+    install_requires=['untangle'],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
