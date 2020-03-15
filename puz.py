@@ -397,6 +397,36 @@ class Puzzle:
 
         return cksum_magic
 
+    def is_completed(self):
+        """Is the puzzle completed, not necessarily correctly."""
+        return '-' not in self.fill
+
+    def is_correct(self):
+        """Is the puzzle completed, correctly."""
+        return (self.is_completed()
+                and GridMarkup.PreviouslyIncorrect not in self.markup().markup
+                and GridMarkup.Incorrect not in self.markup().markup
+                and GridMarkup.Revealed not in self.markup().markup)
+
+    @property
+    def _timer_details(self):
+        ret = tuple([None, None])
+        if self.extensions.get(Extensions.Timer):
+            ret = tuple(self.extensions[Extensions.Timer].decode().split(','))
+
+        return ret
+
+    @property
+    def completion_time(self):
+        if self.is_completed():
+            return int(self._timer_details[0])
+
+    @property
+    def completion_time_minutes_seconds(self):
+        seconds = self.completion_time
+        if seconds:
+            return '%d:%02d' % (seconds / 60, seconds % 60)
+
 
 class PuzzleBuffer:
     """PuzzleBuffer class
