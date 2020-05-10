@@ -1,0 +1,107 @@
+#!/usr/bin/env python3
+#
+
+from argparse import ArgumentParser
+import base64
+from html.parser import HTMLParser
+import json
+import re
+from urllib.request import urlopen
+
+import puz
+
+
+class ParseAmuseLabsHtml(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.current_tag = None
+        self.puzzle_dict = None
+
+    def handle_starttag(self, tag, attrs):
+        self.current_tag = tag
+
+    def handle_data(self, data):
+        if self.current_tag == "script":
+            #  Look for the raw data
+            r = re.compile(r"\s*window\.rawc\s*=\s*'(.*?)';")
+            for l in data.split("\n"):
+                m = r.match(l)
+                if m:
+                    b64 = m.groups()[0]
+                    try:
+                        b64 = b64.decode()
+                    except (UnicodeDecodeError, AttributeError):
+                        pass
+                    try:
+                        self.puzzle_dict = json.loads(base64.b64decode(b64))
+                    except TypeError:
+                        self.puzzle_dict = json.loads(base64.b64decode(b64).decode())
+
+
+#  Example URL:
+#  https://cdn3.amuselabs.com/atlantic/crossword?id=atlantic_20200510&set=atlantic
+args_parser = ArgumentParser()
+args_parser.add_argument("amuselabs_url", help="A URL with a an Amuse Labs crossword")
+args_parser.add_argument("output_puz", help="An output file for the generated .puz")
+args = args_parser.parse_args()
+
+html = urlopen(args.amuselabs_url)
+html_parser = ParseAmuseLabsHtml()
+html_parser.feed(html.read().decode())
+
+amuse_puz = html_parser.puzzle_dict
+
+p = puz.Puzzle()
+p.title = amuse_puz["title"]
+p.author = amuse_puz["author"]
+p.width = amuse_puz["w"]
+p.height = amuse_puz["h"]
+p.fill = "-" * p.width * p.height
+
+#  There may be subtleties with rebuses or non-standard numbering that aren't
+#  yet handled, or can't be handled.
+p.solution = ""
+for row_n in range(p.height):
+    for column in amuse_puz["box"]:
+        c = column[row_n]
+        p.solution += "." if c == "\x00" else c
+
+
+def do_latinize(s):
+    replacements = {
+        u"\u2000": " ",
+        u"\u2001": " ",
+        u"\u2002": " ",
+        u"\u2003": " ",
+        u"\u2004": " ",
+        u"\u2005": " ",
+        u"\u2006": " ",
+        u"\u2007": " ",
+        u"\u2008": " ",
+        u"\u2009": " ",
+        u"\u200A": " ",
+        u"\u2010": "-",
+        u"\u2011": "-",
+        u"\u2012": "-",
+        u"\u2013": "-",
+        u"\u2014": "--",
+        u"\u2015": "--",
+        u"\u2018": "'",
+        u"\u2019": "'",
+        u"\u201c": '"',
+        u"\u201d": '"',
+        u"\u2026": "...",
+    }
+    for u, r in replacements.items():
+        s = s.replace(u, r)
+    return s
+
+
+p.clues = [
+    do_latinize(c["clue"]["clue"])
+    for c in sorted(
+        amuse_puz["placedWords"], key=lambda x: (x["clueNum"], not x["acrossNotDown"])
+    )
+]
+
+p.save(args.output_puz)
