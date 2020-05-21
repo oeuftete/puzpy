@@ -408,7 +408,10 @@ class Puzzle:
     @property
     def completion_time(self):
         if self.is_completed():
-            return int(self._timer_details[0])
+            try:
+                return int(self._timer_details[0])
+            except TypeError:
+                return None
 
     @property
     def completion_time_minutes_seconds(self):
