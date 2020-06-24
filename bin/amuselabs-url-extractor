@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+#
+
+from argparse import ArgumentParser
+from bs4 import BeautifulSoup as bs
+from urllib.request import urlopen
+
+SELECTOR = "body div.puzzles ul.crossList li.crossword div.tile-info > div"
+SUPPORTED_PUZZLES = ('tdb', 'nymag')
+
+args_parser = ArgumentParser()
+args_parser.add_argument("puz_source",
+                         choices=SUPPORTED_PUZZLES,
+                         help="The source of the puzzle")
+args_parser.add_argument("subtitle_string",
+                         help="A string to match in the puzzle description")
+args = args_parser.parse_args()
+
+html = urlopen(
+    "https://cdn3.amuselabs.com/{puz_source}/date-picker?set={puz_source}".
+    format(puz_source=args.puz_source)).read().decode()
+soup = bs(html, features="html.parser")
+xword_id = soup.select('{} :contains("{}")'.format(
+    SELECTOR, args.subtitle_string))[0].parent.parent.parent.parent["data-id"]
+print(
+    "https://cdn3.amuselabs.com/{puz_source}/crossword?id={id}&set={puz_source}"
+    .format(puz_source=args.puz_source, id=xword_id))

@@ -13,9 +13,9 @@ setup(name='puzpy',
       py_modules=['puz'],
       scripts=[
           'bin/puz-to-downs-only', 'bin/uclick-xml-to-puz',
-          'bin/amuselabs-url-to-puz'
+          'bin/amuselabs-url-to-puz', 'bin/amuselabs-url-extractor'
       ],
-      install_requires=['untangle'],
+      install_requires=['beautifulsoup4', 'untangle'],
       classifiers=[
           'Development Status :: 5 - Production/Stable',
           'Intended Audience :: Developers',
