@@ -38,35 +38,6 @@ class ParseAmuseLabsHtml(HTMLParser):
                         self.puzzle_dict = json.loads(base64.b64decode(b64).decode())
 
 
-#  Example URL:
-#  https://cdn3.amuselabs.com/atlantic/crossword?id=atlantic_20200510&set=atlantic
-args_parser = ArgumentParser()
-args_parser.add_argument("amuselabs_url", help="A URL with a an Amuse Labs crossword")
-args_parser.add_argument("output_puz", help="An output file for the generated .puz")
-args = args_parser.parse_args()
-
-html = urlopen(args.amuselabs_url)
-html_parser = ParseAmuseLabsHtml()
-html_parser.feed(html.read().decode())
-
-amuse_puz = html_parser.puzzle_dict
-
-p = puz.Puzzle()
-p.title = amuse_puz["title"]
-p.author = amuse_puz["author"]
-p.width = amuse_puz["w"]
-p.height = amuse_puz["h"]
-p.fill = "-" * p.width * p.height
-
-#  There may be subtleties with rebuses or non-standard numbering that aren't
-#  yet handled, or can't be handled.
-p.solution = ""
-for row_n in range(p.height):
-    for column in amuse_puz["box"]:
-        c = column[row_n]
-        p.solution += "." if c == "\x00" else c
-
-
 def do_latinize(s):
     replacements = {
         u"\u2000": " ",
@@ -95,6 +66,35 @@ def do_latinize(s):
     for u, r in replacements.items():
         s = s.replace(u, r)
     return s
+
+
+#  Example URL:
+#  https://cdn3.amuselabs.com/atlantic/crossword?id=atlantic_20200510&set=atlantic
+args_parser = ArgumentParser()
+args_parser.add_argument("amuselabs_url", help="A URL with a an Amuse Labs crossword")
+args_parser.add_argument("output_puz", help="An output file for the generated .puz")
+args = args_parser.parse_args()
+
+html = urlopen(args.amuselabs_url)
+html_parser = ParseAmuseLabsHtml()
+html_parser.feed(html.read().decode())
+
+amuse_puz = html_parser.puzzle_dict
+
+p = puz.Puzzle()
+p.title = do_latinize(amuse_puz["title"])
+p.author = do_latinize(amuse_puz["author"])
+p.width = amuse_puz["w"]
+p.height = amuse_puz["h"]
+p.fill = "-" * p.width * p.height
+
+#  There may be subtleties with rebuses or non-standard numbering that aren't
+#  yet handled, or can't be handled.
+p.solution = ""
+for row_n in range(p.height):
+    for column in amuse_puz["box"]:
+        c = column[row_n]
+        p.solution += "." if c == "\x00" else c
 
 
 p.clues = [
