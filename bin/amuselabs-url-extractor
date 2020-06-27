@@ -3,6 +3,8 @@
 
 from argparse import ArgumentParser
 from bs4 import BeautifulSoup as bs
+import re
+import sys
 from urllib.request import urlopen
 
 SELECTOR = "body div.puzzles ul.crossList li.crossword div.tile-info > div"
@@ -17,11 +19,19 @@ args_parser.add_argument("subtitle_string",
 args = args_parser.parse_args()
 
 html = urlopen(
-    "https://cdn3.amuselabs.com/{puz_source}/date-picker?set={puz_source}".
-    format(puz_source=args.puz_source)).read().decode()
+    "https://cdn3.amuselabs.com/{puz_source}/date-picker?set={puz_source}&limit=100"
+    .format(puz_source=args.puz_source)).read().decode()
 soup = bs(html, features="html.parser")
-xword_id = soup.select('{} :contains("{}")'.format(
-    SELECTOR, args.subtitle_string))[0].parent.parent.parent.parent["data-id"]
+
+try:
+    xword_id = next(
+        filter(
+            lambda s: re.search(s.getText(), "\b{}\b".format(args.
+                                                             subtitle_string)),
+            soup.select(SELECTOR))).parent.parent.parent["data-id"]
+except StopIteration:
+    sys.exit("No puzzle found for string [{}]!".format(args.subtitle_string))
+
 print(
     "https://cdn3.amuselabs.com/{puz_source}/crossword?id={id}&set={puz_source}"
     .format(puz_source=args.puz_source, id=xword_id))
