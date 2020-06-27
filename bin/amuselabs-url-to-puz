@@ -104,4 +104,11 @@ p.clues = [
     )
 ]
 
+m = puz.Markup(p)
+m.markup = [puz.GridMarkup.Default] * (p.width * p.height)
+for ci in amuse_puz.get("cellInfos", []):
+    if ci.get("isCircled", False):
+        m.markup[ci["x"] + p.width * ci["y"]] = puz.GridMarkup.Circled
+p.helpers['markup'] = m
+
 p.save(args.output_puz)
