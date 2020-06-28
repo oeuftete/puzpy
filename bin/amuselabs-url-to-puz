@@ -106,9 +106,18 @@ p.clues = [
 
 m = puz.Markup(p)
 m.markup = [puz.GridMarkup.Default] * (p.width * p.height)
+
+sawShaded = False
 for ci in amuse_puz.get("cellInfos", []):
     if ci.get("isCircled", False):
         m.markup[ci["x"] + p.width * ci["y"]] = puz.GridMarkup.Circled
+    if ci.get("bgColor", None):
+        sawShaded = True
+        m.markup[ci["x"] + p.width * ci["y"]] = puz.GridMarkup.Circled
+
+if sawShaded:
+    p.notes = "Some shaded cells in the original have been marked with circles."
+
 p.helpers['markup'] = m
 
 p.save(args.output_puz)
