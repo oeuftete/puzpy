@@ -1,37 +1,48 @@
 #!/usr/bin/env python3
 #
 
-from argparse import ArgumentParser
-from bs4 import BeautifulSoup as bs
 import re
 import sys
+from argparse import ArgumentParser
 from urllib.request import urlopen
 
+from bs4 import BeautifulSoup as bs
+
 SELECTOR = "body div.puzzles ul.crossList li.crossword div.tile-info > div"
-SUPPORTED_PUZZLES = ('tdb', 'nymag')
+SUPPORTED_PUZZLES = ("tdb", "nymag")
 
 args_parser = ArgumentParser()
-args_parser.add_argument("puz_source",
-                         choices=SUPPORTED_PUZZLES,
-                         help="The source of the puzzle")
-args_parser.add_argument("subtitle_string",
-                         help="A string to match in the puzzle description")
+args_parser.add_argument(
+    "puz_source", choices=SUPPORTED_PUZZLES, help="The source of the puzzle"
+)
+args_parser.add_argument(
+    "subtitle_string", help="A string to match in the puzzle description"
+)
 args = args_parser.parse_args()
 
-html = urlopen(
-    "https://cdn3.amuselabs.com/{puz_source}/date-picker?set={puz_source}&limit=100"
-    .format(puz_source=args.puz_source)).read().decode()
+html = (
+    urlopen(
+        "https://cdn3.amuselabs.com/{puz_source}/date-picker?set={puz_source}&limit=100".format(
+            puz_source=args.puz_source
+        )
+    )
+    .read()
+    .decode()
+)
 soup = bs(html, features="html.parser")
 
 try:
     xword_id = next(
         filter(
-            lambda s: re.search(s.getText(), "\b{}\b".format(args.
-                                                             subtitle_string)),
-            soup.select(SELECTOR))).parent.parent.parent["data-id"]
+            lambda s: re.search(s.getText(), "\b{}\b".format(args.subtitle_string)),
+            soup.select(SELECTOR),
+        )
+    ).parent.parent.parent["data-id"]
 except StopIteration:
     sys.exit("No puzzle found for string [{}]!".format(args.subtitle_string))
 
 print(
-    "https://cdn3.amuselabs.com/{puz_source}/crossword?id={id}&set={puz_source}"
-    .format(puz_source=args.puz_source, id=xword_id))
+    "https://cdn3.amuselabs.com/{puz_source}/crossword?id={id}&set={puz_source}".format(
+        puz_source=args.puz_source, id=xword_id
+    )
+)
