@@ -40,6 +40,8 @@ class ParseAmuseLabsHtml(HTMLParser):
 
 def do_latinize(s):
     replacements = {
+        u"\u0152": "Oe",
+        u"\u0153": "oe",
         u"\u2000": " ",
         u"\u2001": " ",
         u"\u2002": " ",
