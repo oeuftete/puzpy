@@ -90,13 +90,43 @@ p.width = amuse_puz["w"]
 p.height = amuse_puz["h"]
 p.fill = "-" * p.width * p.height
 
-#  There may be subtleties with rebuses or non-standard numbering that aren't
-#  yet handled, or can't be handled.
+rebus_table = []
+rebus_solutions = []
+
+#  There may be subtleties with non-standard numbering that aren't yet handled,
+#  or can't be handled.
 p.solution = ""
 for row_n in range(p.height):
-    for column in amuse_puz["box"]:
+    for ic, column in enumerate(amuse_puz["box"]):
         c = column[row_n]
-        p.solution += "." if c == "\x00" else c
+        if len(c) > 1:
+            # It's a rebus square
+
+            # If rebus table not initialized, do it.
+            if not rebus_table:
+                rebus_table = [0] * p.width * p.height
+
+            # If we have not seen this rebus, add an entry to solutions
+            if c not in rebus_solutions:
+                rebus_solutions.append(c)
+
+            # Add the solution key + 2 to the table.
+            rebus_table[row_n * p.width + ic] = rebus_solutions.index(c) + 2
+
+            # Add the first letter to the solution
+            p.solution += c[0]
+        else:
+            p.solution += puz.BLACKSQUARE if c == "\x00" else c
+
+#  If there were any rebus squares, set the rebus table and solutions
+if rebus_table:
+    r = p.rebus()
+    r.solutions = dict(enumerate(rebus_solutions, start=1))
+    r.table = rebus_table
+
+    #  OK to set this empty now, but the extension needs to be in the list to be
+    #  saved.
+    p.extensions[puz.Extensions.Rebus] = b""
 
 p.clues = [
     do_latinize(c["clue"]["clue"])

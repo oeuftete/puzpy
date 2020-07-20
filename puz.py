@@ -90,22 +90,22 @@ Extensions = enum(
 )
 
 
-def read(filename):
+def read(filename, lenient=False):
     """
     Read a .puz file and return the Puzzle object.
     throws PuzzleFormatError if there's any problem with the file format.
     """
     with open(filename, "rb") as f:
-        return load(f.read())
+        return load(f.read(), lenient=lenient)
 
 
-def load(data):
+def load(data, lenient=False):
     """
     Read .puz file data and return the Puzzle object.
     throws PuzzleFormatError if there's any problem with the file format.
     """
     puz = Puzzle()
-    puz.load(data)
+    puz.load(data, lenient=lenient)
     return puz
 
 
@@ -150,7 +150,7 @@ class Puzzle:
         self.solution_state = SolutionState.Unlocked
         self.helpers = {}  # add-ons like Rebus and Markup
 
-    def load(self, data):
+    def load(self, data, lenient=False):
         s = PuzzleBuffer(data)
 
         # advance to start - files may contain some data before the
@@ -208,15 +208,18 @@ class Puzzle:
         if s.can_read():
             self.postscript = s.read_to_end()
 
-        if cksum_gbl != self.global_cksum():
-            raise PuzzleFormatError("global checksum does not match")
-        if cksum_hdr != self.header_cksum():
-            raise PuzzleFormatError("header checksum does not match")
-        if cksum_magic != self.magic_cksum():
-            raise PuzzleFormatError("magic checksum does not match")
-        for code, cksum_ext in ext_cksum.items():
-            if cksum_ext != data_cksum(self.extensions[code]):
-                raise PuzzleFormatError("extension %s checksum does not match" % code)
+        if not lenient:
+            if cksum_gbl != self.global_cksum():
+                raise PuzzleFormatError("global checksum does not match")
+            if cksum_hdr != self.header_cksum():
+                raise PuzzleFormatError("header checksum does not match")
+            if cksum_magic != self.magic_cksum():
+                raise PuzzleFormatError("magic checksum does not match")
+            for code, cksum_ext in ext_cksum.items():
+                if cksum_ext != data_cksum(self.extensions[code]):
+                    raise PuzzleFormatError(
+                        "extension %s checksum does not match" % code
+                    )
 
     def save(self, filename):
         puzzle_bytes = self.tobytes()
