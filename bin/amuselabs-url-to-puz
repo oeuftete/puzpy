@@ -8,6 +8,8 @@ from argparse import ArgumentParser
 from html.parser import HTMLParser
 from urllib.request import urlopen
 
+from bs4 import BeautifulSoup
+
 import puz
 
 
@@ -70,6 +72,16 @@ def do_latinize(s):
     return s
 
 
+def do_despan(s):
+    """Remove any span tags from a string."""
+    #  Some outlets occasionally wrap clues in span tags.  Unconditionally clean
+    #  those up.
+    soup = BeautifulSoup(s, features="html.parser")
+    for s in soup.findAll("span"):
+        s.unwrap()
+    return str(soup)
+
+
 #  Example URL:
 #  https://cdn3.amuselabs.com/atlantic/crossword?id=atlantic_20200510&set=atlantic
 args_parser = ArgumentParser()
@@ -129,7 +141,7 @@ if rebus_table:
     p.extensions[puz.Extensions.Rebus] = b""
 
 p.clues = [
-    do_latinize(c["clue"]["clue"])
+    do_latinize(do_despan(c["clue"]["clue"]))
     for c in sorted(
         amuse_puz["placedWords"], key=lambda x: (x["clueNum"], not x["acrossNotDown"])
     )
