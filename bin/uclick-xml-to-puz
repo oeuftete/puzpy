@@ -3,6 +3,7 @@
 import os
 from argparse import ArgumentParser
 from collections import defaultdict
+from html import unescape
 from urllib.parse import unquote_plus
 from xml.sax import SAXParseException
 
@@ -36,8 +37,17 @@ p.solution = xp.AllAnswer["v"].replace("-", ".")
 
 #  Add each clue by its grid number (not clue number), across before down
 parsed_clues = defaultdict(list)
+
+#  uclick xml clues really do have URL-quoted characters in them.  Using
+#  unquote_plus here is a not a mistake!  E.g.
+#
+#    <d15 a="NEO"
+#      c="%22The Matrix%22 character"
+#      n="56"
+#      cn="23" />
+#
 for clue in list(xp.across.children + xp.down.children):
-    parsed_clues[int(clue["n"])].append(unquote_plus(clue["c"]))
+    parsed_clues[int(clue["n"])].append(unquote_plus(unescape(clue["c"])))
 
 #  Dump the clues back by grid number, across before down
 for grid_square in sorted(parsed_clues.keys()):

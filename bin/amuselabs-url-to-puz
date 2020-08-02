@@ -5,6 +5,7 @@ import base64
 import json
 import re
 from argparse import ArgumentParser
+from html import unescape
 from html.parser import HTMLParser
 from urllib.request import urlopen
 
@@ -96,8 +97,8 @@ html_parser.feed(html.read().decode())
 amuse_puz = html_parser.puzzle_dict
 
 p = puz.Puzzle()
-p.title = do_latinize(amuse_puz["title"])
-p.author = do_latinize(amuse_puz["author"])
+p.title = do_latinize(unescape(amuse_puz["title"]))
+p.author = do_latinize(unescape(amuse_puz["author"]))
 p.width = amuse_puz["w"]
 p.height = amuse_puz["h"]
 p.fill = "-" * p.width * p.height
@@ -141,7 +142,7 @@ if rebus_table:
     p.extensions[puz.Extensions.Rebus] = b""
 
 p.clues = [
-    do_latinize(do_despan(c["clue"]["clue"]))
+    do_latinize(unescape(do_despan(c["clue"]["clue"])))
     for c in sorted(
         amuse_puz["placedWords"], key=lambda x: (x["clueNum"], not x["acrossNotDown"])
     )
