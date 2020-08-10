@@ -10,6 +10,7 @@ from html.parser import HTMLParser
 from urllib.request import urlopen
 
 from bs4 import BeautifulSoup
+from unidecode import unidecode
 
 import puz
 
@@ -93,38 +94,14 @@ def do_latinize(s):
         u"\u03C9": "omega",
     }
 
-    replacements = {
-        u"\u0152": "Oe",
-        u"\u0153": "oe",
-        u"\u2000": " ",
-        u"\u2001": " ",
-        u"\u2002": " ",
-        u"\u2003": " ",
-        u"\u2004": " ",
-        u"\u2005": " ",
-        u"\u2006": " ",
-        u"\u2007": " ",
-        u"\u2008": " ",
-        u"\u2009": " ",
-        u"\u200A": " ",
-        u"\u2010": "-",
-        u"\u2011": "-",
-        u"\u2012": "-",
-        u"\u2013": "-",
-        u"\u2014": "--",
-        u"\u2015": "--",
-        u"\u2018": "'",
-        u"\u2019": "'",
-        u"\u201c": '"',
-        u"\u201d": '"',
-        u"\u2026": "...",
-    }
+    #  Reserved for any characters where we want to diverge from unidecode.
+    replacements = {}
     replacements.update(
         {u: "*{}*".format(latin_equiv) for u, latin_equiv in GREEK_ALPHABET_MAP.items()}
     )
     for u, r in replacements.items():
         s = s.replace(u, r)
-    return s
+    return unidecode(s)
 
 
 def do_despan(s):
