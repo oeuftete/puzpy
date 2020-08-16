@@ -34,7 +34,7 @@ soup = bs(html, features="html.parser")
 try:
     xword_id = next(
         filter(
-            lambda s: re.search(s.getText(), "\b{}\b".format(args.subtitle_string)),
+            lambda s: re.search(r"\b{}\b".format(args.subtitle_string), s.getText(),),
             soup.select(SELECTOR),
         )
     ).parent.parent.parent["data-id"]
