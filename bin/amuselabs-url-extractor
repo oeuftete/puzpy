@@ -9,7 +9,7 @@ from urllib.request import urlopen
 from bs4 import BeautifulSoup as bs
 
 SELECTOR = "body div.puzzles ul.crossList li.crossword div.tile-info > div"
-SUPPORTED_PUZZLES = ("tdb", "nymag")
+SUPPORTED_PUZZLES = ("tdb", "nymag", "vox")
 
 args_parser = ArgumentParser()
 args_parser.add_argument(
