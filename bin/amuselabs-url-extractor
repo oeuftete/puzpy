@@ -9,21 +9,26 @@ from urllib.request import urlopen
 from bs4 import BeautifulSoup as bs
 
 SELECTOR = "body div.puzzles ul.crossList li.crossword div.tile-info > div"
-SUPPORTED_PUZZLES = ("tdb", "nymag", "vox")
+SUPPORTED_PUZZLES = {"tdb": "tdb", "nymag": "nymag", "vox": "vox", "tny": "tny-weekly"}
 
 args_parser = ArgumentParser()
 args_parser.add_argument(
-    "puz_source", choices=SUPPORTED_PUZZLES, help="The source of the puzzle"
+    "puz_source",
+    choices=tuple(SUPPORTED_PUZZLES.keys()),
+    help="The source of the puzzle",
 )
 args_parser.add_argument(
     "subtitle_string", help="A string to match in the puzzle description"
 )
 args = args_parser.parse_args()
 
+source = args.puz_source
+source_set = SUPPORTED_PUZZLES[source]
+
 html = (
     urlopen(
-        "https://cdn3.amuselabs.com/{puz_source}/date-picker?set={puz_source}&limit=100".format(
-            puz_source=args.puz_source
+        "https://cdn3.amuselabs.com/{source}/date-picker?set={source_set}&limit=100".format(
+            source=source, source_set=source_set
         )
     )
     .read()
@@ -42,7 +47,7 @@ except StopIteration:
     sys.exit("No puzzle found for string [{}]!".format(args.subtitle_string))
 
 print(
-    "https://cdn3.amuselabs.com/{puz_source}/crossword?id={id}&set={puz_source}".format(
-        puz_source=args.puz_source, id=xword_id
+    "https://cdn3.amuselabs.com/{source}/crossword?id={id}&set={source_set}".format(
+        source=source, id=xword_id, source_set=source_set
     )
 )
