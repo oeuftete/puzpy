@@ -3,51 +3,142 @@
 
 import re
 import sys
+from abc import ABC, abstractmethod
 from argparse import ArgumentParser
 from urllib.request import urlopen
 
 from bs4 import BeautifulSoup as bs
 
-SELECTOR = "body div.puzzles ul.crossList li.crossword div.tile-info > div"
-SUPPORTED_PUZZLES = {"tdb": "tdb", "nymag": "nymag", "vox": "vox", "tny": "tny-weekly"}
 
-args_parser = ArgumentParser()
-args_parser.add_argument(
-    "puz_source",
-    choices=tuple(SUPPORTED_PUZZLES.keys()),
-    help="The source of the puzzle",
-)
-args_parser.add_argument(
-    "subtitle_string", help="A string to match in the puzzle description"
-)
-args = args_parser.parse_args()
+class AbstractExtractor(ABC):
+    def __init__(self, source, source_set=None):
+        self.source = source
+        self.source_set = source_set
 
-source = args.puz_source
-source_set = SUPPORTED_PUZZLES[source]
+    @property
+    def html(self):
+        return urlopen(self.url).read().decode()
 
-html = (
-    urlopen(
-        "https://cdn3.amuselabs.com/{source}/date-picker?set={source_set}&limit=100".format(
-            source=source, source_set=source_set
+    @property
+    def soup(self):
+        return bs(self.html, features="html.parser")
+
+    @property
+    @abstractmethod
+    def url(self):
+        pass
+
+    @property
+    @abstractmethod
+    def url_format(self):
+        pass
+
+    @property
+    @abstractmethod
+    def target(self):
+        pass
+
+
+class Cdn3Extractor(AbstractExtractor):
+    def __init__(self, source, source_set, search_string):
+        super().__init__(source, source_set)
+        self.search_string = search_string
+
+    @property
+    def selector(self):
+        return "body div.puzzles ul.crossList li.crossword div.tile-info > div"
+
+    @property
+    def url_format(self):
+        return (
+            "https://cdn3.amuselabs.com/{source}/date-picker?set={source_set}&limit=100"
         )
-    )
-    .read()
-    .decode()
-)
-soup = bs(html, features="html.parser")
 
-try:
-    xword_id = next(
-        filter(
-            lambda s: re.search(r"\b{}\b".format(args.subtitle_string), s.getText(),),
-            soup.select(SELECTOR),
+    @property
+    def url(self):
+        return self.url_format.format(source=self.source, source_set=self.source_set)
+
+    @property
+    def xword_id(self):
+        try:
+            return next(
+                filter(
+                    lambda s: re.search(
+                        r"\b{}\b".format(self.search_string), s.getText(),
+                    ),
+                    self.soup.select(self.selector),
+                )
+            ).parent.parent.parent["data-id"]
+        except StopIteration:
+            sys.exit("No puzzle found for string [{}]!".format(self.search_string))
+
+    @property
+    def target(self):
+        return "https://cdn3.amuselabs.com/{source}/crossword?id={id}&set={source_set}".format(
+            source=self.source, id=self.xword_id, source_set=self.source_set
         )
-    ).parent.parent.parent["data-id"]
-except StopIteration:
-    sys.exit("No puzzle found for string [{}]!".format(args.subtitle_string))
 
-print(
-    "https://cdn3.amuselabs.com/{source}/crossword?id={id}&set={source_set}".format(
-        source=source, id=xword_id, source_set=source_set
+
+class TnyExtractor(AbstractExtractor):
+    def __init__(self, source, source_set, search_string):
+        super().__init__(source, source_set)
+        self.search_string = search_string
+
+    @property
+    def url(self):
+        return self.url_format.format(search_string=self.search_string)
+
+    @property
+    def url_format(self):
+        return (
+            "https://www.newyorker.com/puzzles-and-games-dept/crossword/{search_string}"
+        )
+
+    @property
+    def target(self):
+        #  Just let this raise if not found
+        return self.soup.find("iframe", id="crossword")["data-src"]
+
+
+class UrlExtractor:
+    CDN3_SOURCES = ["tdb", "nymag", "vox"]
+
+    def __init__(self, source, source_set, search_string):
+        if source in self.CDN3_SOURCES:
+            self.extractor = Cdn3Extractor(source, source_set, search_string)
+        elif source == "tny":
+            self.extractor = TnyExtractor(source, source_set, search_string)
+        else:
+            raise
+
+    @property
+    def target(self):
+        return self.extractor.target
+
+
+if __name__ == "__main__":
+    SUPPORTED_PUZZLES = {
+        "tdb": "tdb",
+        "nymag": "nymag",
+        "vox": "vox",
+        "tny": "tny-weekly",
+    }
+    args_parser = ArgumentParser()
+    args_parser.add_argument(
+        "puz_source",
+        choices=tuple(SUPPORTED_PUZZLES.keys()),
+        help="The source of the puzzle",
     )
-)
+    args_parser.add_argument(
+        "search_string",
+        help="A string to match in the puzzle description (cdn3 sources), "
+        "or a YYYY/MM/DD to match (tny source)",
+    )
+    args = args_parser.parse_args()
+
+    extractor = UrlExtractor(
+        source=args.puz_source,
+        source_set=SUPPORTED_PUZZLES[args.puz_source],
+        search_string=args.search_string,
+    )
+    print(extractor.target)
