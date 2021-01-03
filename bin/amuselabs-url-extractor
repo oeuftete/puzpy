@@ -40,6 +40,8 @@ class AbstractExtractor(ABC):
 
 
 class Cdn3Extractor(AbstractExtractor):
+    CDN_BASE_URL = "https://cdn3.amuselabs.com"
+
     def __init__(self, source, source_set, search_string):
         super().__init__(source, source_set)
         self.search_string = search_string
@@ -50,8 +52,8 @@ class Cdn3Extractor(AbstractExtractor):
 
     @property
     def url_format(self):
-        return (
-            "https://cdn3.amuselabs.com/{source}/date-picker?set={source_set}&limit=100"
+        return "/".join(
+            [self.CDN_BASE_URL, "{source}/date-picker?set={source_set}&limit=100"]
         )
 
     @property
@@ -74,9 +76,19 @@ class Cdn3Extractor(AbstractExtractor):
 
     @property
     def target(self):
-        return "https://cdn3.amuselabs.com/{source}/crossword?id={id}&set={source_set}".format(
-            source=self.source, id=self.xword_id, source_set=self.source_set
+        return "{base}/{source}/crossword?id={id}&set={source_set}".format(
+            base=self.CDN_BASE_URL,
+            source=self.source,
+            id=self.xword_id,
+            source_set=self.source_set,
         )
+
+
+class Cdn2Extractor(Cdn3Extractor):
+    CDN_BASE_URL = "https://cdn2.amuselabs.com"
+
+    def __init__(self, source_set, search_string):
+        super().__init__("pmm", source_set, search_string)
 
 
 class TnyExtractor(AbstractExtractor):
@@ -101,15 +113,18 @@ class TnyExtractor(AbstractExtractor):
 
 
 class UrlExtractor:
+    CDN2_SOURCES = ["Newsday"]
     CDN3_SOURCES = ["tdb", "nymag", "vox"]
 
     def __init__(self, source, source_set, search_string):
-        if source in self.CDN3_SOURCES:
+        if source in self.CDN2_SOURCES:
+            self.extractor = Cdn2Extractor(source_set, search_string)
+        elif source in self.CDN3_SOURCES:
             self.extractor = Cdn3Extractor(source, source_set, search_string)
         elif source == "tny":
             self.extractor = TnyExtractor(source, source_set, search_string)
         else:
-            raise
+            raise Exception(f"Unknown source [{source}]")
 
     @property
     def target(self):
@@ -118,10 +133,11 @@ class UrlExtractor:
 
 if __name__ == "__main__":
     SUPPORTED_PUZZLES = {
-        "tdb": "tdb",
-        "nymag": "nymag",
-        "vox": "vox",
-        "tny": "tny-weekly",
+        "tdb": {},
+        "nymag": {},
+        "vox": {},
+        "tny": {"source_set": "tny-weekly"},
+        "Newsday": {"source_set": "creatorsweb"},
     }
     args_parser = ArgumentParser()
     args_parser.add_argument(
@@ -131,14 +147,16 @@ if __name__ == "__main__":
     )
     args_parser.add_argument(
         "search_string",
-        help="A string to match in the puzzle description (cdn3 sources), "
+        help="A string to match in the puzzle description (cdn sources), "
         "or a YYYY/MM/DD to match (tny source)",
     )
     args = args_parser.parse_args()
 
     extractor = UrlExtractor(
         source=args.puz_source,
-        source_set=SUPPORTED_PUZZLES[args.puz_source],
+        source_set=SUPPORTED_PUZZLES[args.puz_source].get(
+            "source_set", args.puz_source
+        ),
         search_string=args.search_string,
     )
     print(extractor.target)
