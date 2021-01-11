@@ -114,6 +114,16 @@ def do_despan(s):
     return str(soup)
 
 
+def rewrap_i(s):
+    """Remove any i tags from a string."""
+    #  Some outlets wrap titles, etc. in <i>.  Use markdown-style notation.
+    soup = BeautifulSoup(s, features="html.parser")
+    for s in soup.findAll("i"):
+        s.string.replace_with("_{}_".format(s.string))
+        s.unwrap()
+    return str(soup)
+
+
 #  Example URL:
 #  https://cdn3.amuselabs.com/atlantic/crossword?id=atlantic_20200510&set=atlantic
 args_parser = ArgumentParser()
@@ -173,7 +183,7 @@ if rebus_table:
     p.extensions[puz.Extensions.Rebus] = b""
 
 p.clues = [
-    do_latinize(unescape(do_despan(c["clue"]["clue"])))
+    do_latinize(unescape(rewrap_i(do_despan(c["clue"]["clue"])))).strip()
     for c in sorted(
         amuse_puz["placedWords"], key=lambda x: (x["clueNum"], not x["acrossNotDown"])
     )
